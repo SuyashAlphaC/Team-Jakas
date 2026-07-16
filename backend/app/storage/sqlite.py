@@ -60,6 +60,16 @@ CREATE TABLE IF NOT EXISTS replay_events (
     timestamp TEXT NOT NULL,
     payload TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS remediation_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action_id TEXT NOT NULL,
+    incident_id TEXT NOT NULL,
+    grade TEXT NOT NULL,
+    outcome TEXT NOT NULL,
+    detail TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 """
 
 
@@ -102,6 +112,19 @@ class Storage:
             (prev_hash, entry_hash, event_type, body, self._now()),
         )
 
+    def reset_for_replay(self) -> None:
+        """Clear run-scoped rows so each replay starts from a clean slate."""
+        with self._conn() as conn:
+            conn.execute("DELETE FROM replay_events")
+            conn.execute("DELETE FROM incidents")
+            conn.execute("DELETE FROM remediation_actions")
+            conn.execute("DELETE FROM remediation_feedback")
+            conn.execute(
+                "UPDATE replay_state SET current_seq=0, status='replaying', updated_at=? WHERE id=1",
+                (self._now(),),
+            )
+            self._append_audit(conn, "replay_reset", {"reason": "new_replay_session"})
+
     def import_dataset(self, path: str, content_hash: str, row_count: int) -> int:
         with self._conn() as conn:
             existing = conn.execute(
@@ -113,6 +136,10 @@ class Storage:
                     "UPDATE replay_state SET dataset_id=?, status='ready', updated_at=? WHERE id=1",
                     (existing["id"], self._now()),
                 )
+                conn.execute("DELETE FROM replay_events")
+                conn.execute("DELETE FROM incidents")
+                conn.execute("DELETE FROM remediation_actions")
+                conn.execute("DELETE FROM remediation_feedback")
                 return existing["id"]
             cur = conn.execute(
                 "INSERT INTO dataset_imports (path, content_hash, row_count, imported_at) VALUES (?,?,?,?)",
@@ -181,6 +208,41 @@ class Storage:
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT seq, prev_hash, entry_hash, event_type, payload, created_at FROM audit_ledger ORDER BY seq DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def record_feedback(
+        self,
+        action_id: str,
+        incident_id: str,
+        grade: str,
+        outcome: str,
+        detail: str,
+    ) -> None:
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO remediation_feedback (action_id, incident_id, grade, outcome, detail, created_at) VALUES (?,?,?,?,?,?)",
+                (action_id, incident_id, grade, outcome, detail, self._now()),
+            )
+            self._append_audit(
+                conn,
+                "remediation_feedback",
+                {"action_id": action_id, "incident_id": incident_id, "grade": grade, "outcome": outcome, "detail": detail},
+            )
+
+    def feedback_outcomes(self) -> dict[str, str]:
+        """Map domain:verdict keys to latest outcome for planner learning."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT grade, outcome FROM remediation_feedback ORDER BY id DESC LIMIT 100"
+            ).fetchall()
+        return {r["grade"]: r["outcome"] for r in rows}
+
+    def list_feedback(self, limit: int = 50) -> list[dict]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM remediation_feedback ORDER BY id DESC LIMIT ?",
                 (limit,),
             ).fetchall()
             return [dict(r) for r in rows]

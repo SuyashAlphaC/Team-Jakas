@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.config_paths import DATA_DIR, FIXTURES_DIR, MODELS_DIR
@@ -25,6 +26,7 @@ REPORT_DIR = DATA_DIR / "reports"
 
 storage = Storage(DB_PATH)
 engine = ReplayEngine(storage, FIXTURES_DIR)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -32,12 +34,11 @@ async def lifespan(app: FastAPI):
     if registry.manifest_path().exists():
         registry.load()
     else:
-        # Auto-train on first start when no models present (local + Docker)
         registry.train_all(days=28)
     yield
 
 
-app = FastAPI(title="Context-Aware Observability", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Context-Aware Observability", version="0.4.0", lifespan=lifespan)
 
 _cors_origins = os.environ.get("ALLOWED_ORIGINS", "*")
 _allow_origins = ["*"] if _cors_origins.strip() == "*" else [o.strip() for o in _cors_origins.split(",") if o.strip()]
@@ -60,10 +61,19 @@ def health():
     return {
         "status": "ok",
         "service": "context-aware-observability",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "ml_ready": registry.ready,
         "secret_seed_accuracy": registry._manifest.get("secret_seed_accuracy"),
+        "grafana_url": os.environ.get("GRAFANA_URL", "http://localhost:3001"),
     }
+
+
+@app.get("/metrics")
+def prometheus_metrics():
+    from app.metrics.exporter import metrics_response
+
+    body, content_type = metrics_response()
+    return Response(content=body, media_type=content_type)
 
 
 @app.get("/api/ml/status")
@@ -102,9 +112,12 @@ def ml_load():
 
 @app.post("/api/import")
 def import_dataset(filename: str = "dataset.csv"):
+    from app.metrics.exporter import backfill_from_observations
+
     try:
         info = engine.load_fixture(filename)
-        return {"status": "imported", **info}
+        count = backfill_from_observations(engine.observations)
+        return {"status": "imported", "metrics_backfill_rows": count, **info}
     except Exception as e:
         raise HTTPException(400, str(e))
 
@@ -227,14 +240,35 @@ def validate_against_labels(use_seed: bool = True):
     }
 
 
+@app.get("/api/incidents/{incident_id}/graph")
+def incident_graph(incident_id: str):
+    for inc in storage.list_incidents():
+        if inc.incident_id == incident_id:
+            if inc.causal_graph:
+                return inc.causal_graph.model_dump()
+            raise HTTPException(404, "no causal graph for incident")
+    raise HTTPException(404, "incident not found")
+
+
+@app.get("/api/deployments")
+def list_deployments():
+    from app.config.loader import load_deployments
+
+    return load_deployments()
+
+
+@app.get("/api/feedback")
+def remediation_feedback(limit: int = 50):
+    return storage.list_feedback(limit)
+
+
 @app.post("/api/actions/{action_id}/advance")
 def advance(action_id: str, body: ApproveRequest):
     actions = storage.list_actions()
     action = next((a for a in actions if a.action_id == action_id), None)
     if not action:
         raise HTTPException(404, "action not found")
-    updated = advance_action(action, approve=body.approve)
-    storage.save_action(updated)
+    updated = advance_action(action, approve=body.approve, storage=storage)
     return updated.model_dump()
 
 
@@ -252,6 +286,15 @@ def rollback(action_id: str):
 @app.get("/api/audit")
 def audit(limit: int = 50):
     return storage.get_audit_chain(limit)
+
+
+@app.post("/api/alerting/webhook")
+async def grafana_alert_webhook(payload: dict):
+    """Receives Grafana unified alerting notifications (contact point webhook)."""
+    alerts = payload.get("alerts") or []
+    titles = [a.get("labels", {}).get("alertname", a.get("status", "?")) for a in alerts]
+    logger.info("Grafana alert webhook: status=%s alerts=%s", payload.get("status"), titles)
+    return {"status": "received", "alert_count": len(alerts)}
 
 
 @app.get("/api/stream")

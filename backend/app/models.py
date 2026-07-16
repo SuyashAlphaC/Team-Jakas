@@ -29,6 +29,7 @@ class ActionGrade(str, Enum):
     THROTTLE = "throttle"
     RESTART = "restart"
     ISOLATE = "isolate"
+    ROLLBACK = "rollback"
 
 
 class RemediationState(str, Enum):
@@ -76,6 +77,42 @@ class RootCauseCandidate(BaseModel):
     evidence: list[str] = Field(default_factory=list)
 
 
+class CausalNode(BaseModel):
+    node_id: str
+    node_type: str  # symptom | service | root | config | deployment
+    label: str
+    domain: Optional[str] = None
+    service: Optional[str] = None
+    metric: Optional[str] = None
+    value: Optional[float] = None
+    confidence: float = 0.0
+
+
+class CausalEdge(BaseModel):
+    source: str
+    target: str
+    relation: str  # observed_on | propagates_to | caused_by | configured_by | deployed_in
+    weight: float = 1.0
+    evidence: str = ""
+
+
+class CausalGraph(BaseModel):
+    nodes: list[CausalNode] = Field(default_factory=list)
+    edges: list[CausalEdge] = Field(default_factory=list)
+    primary_root_id: Optional[str] = None
+    reasoning_chain: list[str] = Field(default_factory=list)
+
+
+class DeploymentContext(BaseModel):
+    service: str
+    version: str
+    commit: str
+    deployed_at: str
+    author: str = ""
+    message: str = ""
+    config_snapshot: dict[str, str] = Field(default_factory=dict)
+
+
 class Incident(BaseModel):
     incident_id: str
     started_at: str
@@ -88,6 +125,9 @@ class Incident(BaseModel):
     mttr_detect_ms: Optional[float] = None
     mttr_rca_ms: Optional[float] = None
     mttr_mitigate_ms: Optional[float] = None
+    causal_graph: Optional[CausalGraph] = None
+    deployment_context: list[DeploymentContext] = Field(default_factory=list)
+    reasoning_summary: str = ""
 
 
 class RemediationAction(BaseModel):
@@ -103,6 +143,13 @@ class RemediationAction(BaseModel):
     rollback_command: str = ""
     requires_approval: bool = False
     blast_radius: str = ""
+    risk_score: float = 0.0
+    priority: int = 0
+    affected_services: list[str] = Field(default_factory=list)
+    verification_criteria: str = ""
+    verification_result: str = ""
+    outcome: str = ""
+    learned_from: Optional[str] = None
 
 
 class ReplayEvent(BaseModel):

@@ -4,6 +4,7 @@ COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
 ENV VITE_API_URL=
+ENV VITE_GRAFANA_URL=http://localhost:3001
 RUN npm run build
 
 FROM nginx:alpine

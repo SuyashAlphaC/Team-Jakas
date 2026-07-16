@@ -19,6 +19,22 @@ cd frontend && npm install && npm run dev
 
 Open **http://127.0.0.1:5173** and click **Replay Championship Night** (240-minute timeline).
 
+### Grafana — CPU histograms & pie charts per domain
+
+| Service | URL |
+|---------|-----|
+| **Grafana** | http://localhost:3001 (admin / `observability`) |
+| **Prometheus** | http://localhost:9090 |
+| **Metrics scrape** | http://localhost:8000/metrics |
+
+Dashboard: **Observability → Domain CPU & Telemetry Utilization**
+
+- **Pie charts** — average domain utilization share + compute sub-metric breakdown
+- **Histograms** — CPU/utilization distribution per telemetry entry for each of 7 domains
+- **Live time series** — updates during replay
+
+On startup, click **Replay** or call `POST /api/import` to backfill histograms from 240 CSV rows. See [`deploy/grafana/README.md`](deploy/grafana/README.md).
+
 Regenerate the expanded fixture:
 
 ```bash
@@ -85,6 +101,7 @@ CSV Seed → Replay Engine → CIS Decomposition → Domain Verdicts
 | GET | `/api/actions` | Remediation actions |
 | POST | `/api/actions/{id}/advance` | Approve/execute action |
 | GET | `/api/audit` | Hash-chained audit ledger |
+| GET | `/metrics` | Prometheus scrape (domain CPU histograms + gauges) |
 
 ## Demo Scenarios
 
@@ -141,7 +158,7 @@ Each chip shows the **domain**, **σ (sigma)**, and **confidence %**.
 |------|---------|
 | **Incidents** | Times the system opened an RCA incident (attack, internal fault, or both) |
 | **Remediation actions** | Total proposed fixes across all incidents |
-| **Key (attack/combination)** | High-value incidents — real attack or attack + internal fault together (look for **★** at **20:16**) |
+| **Key (attack/combination)** | High-value incidents — real attack or attack + internal fault together |
 
 ### Explained + Unexplained Residual
 
@@ -194,7 +211,7 @@ Chronological **event log** during replay (newest at top).
 
 Every **RCA package** opened when the pipeline finds attack or internal fault. Each tab is one incident at a timestamp.
 
-- **★** marks key incidents (attack or combination) — focus on **20:16** for the judge demo
+- **★** marks key incidents (attack or combination)
 - **Export this RCA** — per-incident Markdown report: symptoms, root cause, code file/line, MTTR
 
 On the 240-row replay you will see many incidents from ML noise in early minutes; the **★** tabs are the narrative that matters.
@@ -233,16 +250,29 @@ Each card shows **target**, **reason**, example **command**, and **Approve** for
 ## Pipeline (Phase 1 → Phase 2)
 
 ```
-CSV → CIS Decomposition → 3 Analyzers → Evidence Fusion → RCA + Localization → Graded Remediation
+CSV → CIS Decomposition → Analyzers → Fusion → Causal Graph → RCA + Code/Config → Risk Planner → Verify → Feedback
 ```
 
 | Tier | Component |
 |------|-----------|
 | 1 | Prophet/STL + CIS context multipliers |
-| 2 | Robust residual + 3σ gate |
+| 2 | Robust residual + 3σ gate + ML overlay |
 | 3 | SecurityAnalyzer · InternalFlowAnalyzer · ResourceHealthAnalyzer |
 | 4 | Evidence Fusion Engine |
-| 5 | RCA + source patch proposals + MTTR |
+| 5 | **Causal dependency graph** — symptom → service → root via topology |
+| 6 | **Code/config awareness** — file:line, config keys, deploy metadata |
+| 7 | **Risk-aware planner** — observe → rate-limit → throttle → restart → isolate → rollback |
+| 8 | **Verification + feedback loop** — recovery checks recorded in audit ledger |
+
+### Phase 2 APIs
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/incidents/{id}/graph` | Causal dependency graph for an incident |
+| `GET /api/deployments` | Service deployment + config snapshots |
+| `GET /api/feedback` | Remediation outcome history for planner learning |
+
+Config: `config/topology.yml`, `config/deployments.yml`, `config/remediation-policies.yml`
 
 ## Safety
 

@@ -13,6 +13,8 @@ action_grades:
 
 graduation:
   - observe
-  - rate_limit_suspect
+  - rate_limit
   - throttle
+  - restart
   - isolate
+  - rollback

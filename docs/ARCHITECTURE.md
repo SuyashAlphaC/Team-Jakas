@@ -2,7 +2,22 @@
 
 ## Overview
 
-The Platinum demo implements the Phase 1 Gold design as a runnable local stack:
+The Platinum demo implements Phase 1 detection plus **Phase 2 reasoning** (causal graph, config awareness, risk planner):
+
+```
+CSV → CIS → Analyzers → Fusion → Causal Graph → RCA + Deploy/Config → Risk Planner → Verify → Feedback → Dashboard
+```
+
+Phase 2 modules:
+
+| Module | Path | Role |
+|--------|------|------|
+| Causal graph | `backend/app/causal/graph.py` | Symptom → service → root tracing via topology |
+| Config awareness | `backend/app/config/awareness.py` | Maps roots to deploy metadata + config values |
+| Risk planner | `backend/app/remediation/risk_planner.py` | Blast-radius scored action ladder |
+| Feedback loop | `backend/app/remediation/feedback.py` | Post-action verification + outcome recording |
+
+Legacy diagram (Phase 1 core):
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐

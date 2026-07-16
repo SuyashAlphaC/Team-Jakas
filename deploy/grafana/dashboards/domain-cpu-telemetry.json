@@ -1,0 +1,291 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "Grafana Alerts",
+        "type": "dashboard",
+        "lineStyle": { "fill": "dash", "lineWidth": 2 }
+      },
+      {
+        "builtIn": 0,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgba(244, 33, 46, 1)",
+        "name": "Attack",
+        "expr": "increase(observability_model_alerts_fired_total{verdict=\"attack\"}[2m]) > 0",
+        "step": "5s",
+        "tagKeys": "domain,verdict",
+        "textFormat": "{{domain}} · {{verdict}}",
+        "titleFormat": "Attack detected",
+        "useValueForTime": false,
+        "lineStyle": { "fill": "dash", "lineWidth": 2 }
+      },
+      {
+        "builtIn": 0,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgba(255, 173, 31, 1)",
+        "name": "Internal Fault",
+        "expr": "increase(observability_model_alerts_fired_total{verdict=\"internal_fault\"}[2m]) > 0",
+        "step": "5s",
+        "tagKeys": "domain,verdict",
+        "textFormat": "{{domain}} · {{verdict}}",
+        "titleFormat": "Internal fault",
+        "useValueForTime": false,
+        "lineStyle": { "fill": "dash", "lineWidth": 2 }
+      },
+      {
+        "builtIn": 0,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgba(120, 86, 255, 1)",
+        "name": "Unexplained",
+        "expr": "increase(observability_model_alerts_fired_total{verdict=\"unexplained\"}[2m]) > 0",
+        "step": "5s",
+        "tagKeys": "domain,verdict",
+        "textFormat": "{{domain}} · {{verdict}}",
+        "titleFormat": "Unexplained residual",
+        "useValueForTime": false,
+        "lineStyle": { "fill": "dash", "lineWidth": 2 }
+      },
+      {
+        "builtIn": 0,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgba(255, 0, 128, 1)",
+        "name": "COMBINATION",
+        "expr": "increase(observability_combination_fired_total[2m]) > 0",
+        "step": "5s",
+        "textFormat": "Attack + internal_fault simultaneous",
+        "titleFormat": "COMBINATION ★",
+        "useValueForTime": false,
+        "lineStyle": { "fill": "dash", "lineWidth": 3 }
+      },
+      {
+        "builtIn": 0,
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgba(0, 186, 124, 1)",
+        "name": "Incident Opened",
+        "expr": "increase(observability_incidents_created_total[2m]) > 0",
+        "step": "5s",
+        "tagKeys": "kind",
+        "textFormat": "Incident · {{kind}}",
+        "titleFormat": "RCA incident",
+        "useValueForTime": false,
+        "lineStyle": { "fill": "dash", "lineWidth": 2 }
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Live Dashboard",
+      "url": "http://localhost:5173",
+      "type": "link",
+      "icon": "external link"
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Domain CPU / Utilization Share (avg per telemetry entry)",
+      "description": "Average utilization 0–100% across all imported CSV rows. Compute uses real CPU%; other domains use normalized stress index.",
+      "type": "piechart",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (domain) (observability_domain_cpu_usage_pct_sum) / sum by (domain) (observability_domain_cpu_usage_pct_count)",
+          "legendFormat": "{{domain}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Compute Domain Breakdown (current minute)",
+      "description": "Pie of CPU utilization vs throttling vs context switches within the compute domain.",
+      "type": "piechart",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "observability_compute_component_pct",
+          "legendFormat": "{{component}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "pie",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "decimals": 1 }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Compute — CPU Usage Histogram",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (le) (observability_domain_cpu_usage_pct_bucket{domain=\"compute\"})",
+          "legendFormat": "≤{{le}}%",
+          "format": "heatmap",
+          "refId": "A"
+        }
+      ],
+      "options": { "orientation": "vertical", "xTickLabelRotation": -45 },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "continuous-BlYlRd" } } }
+    },
+    {
+      "id": 4,
+      "title": "Transaction — Utilization Histogram",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (le) (observability_domain_cpu_usage_pct_bucket{domain=\"transaction\"})",
+          "legendFormat": "≤{{le}}%",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlYlRd" } } }
+    },
+    {
+      "id": 5,
+      "title": "Security — Utilization Histogram",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (le) (observability_domain_cpu_usage_pct_bucket{domain=\"security\"})",
+          "legendFormat": "≤{{le}}%",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlYlRd" } } }
+    },
+    {
+      "id": 6,
+      "title": "Process — Utilization Histogram",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "expr": "sum by (le) (observability_domain_cpu_usage_pct_bucket{domain=\"process\"})",
+          "legendFormat": "≤{{le}}%",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlYlRd" } } }
+    },
+    {
+      "id": 7,
+      "title": "Network — Utilization Histogram",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 18 },
+      "targets": [
+        {
+          "expr": "sum by (le) (observability_domain_cpu_usage_pct_bucket{domain=\"network\"})",
+          "legendFormat": "≤{{le}}%",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlYlRd" } } }
+    },
+    {
+      "id": 8,
+      "title": "Streaming + Control Plane Histograms",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 18 },
+      "targets": [
+        {
+          "expr": "sum by (le, domain) (observability_domain_cpu_usage_pct_bucket{domain=~\"streaming|control_plane\"})",
+          "legendFormat": "{{domain}} ≤{{le}}%",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "id": 9,
+      "title": "Live Domain Utilization (updates during replay)",
+      "type": "timeseries",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 26 },
+      "targets": [
+        {
+          "expr": "observability_domain_cpu_current_pct",
+          "legendFormat": "{{domain}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 15 }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "description": "Dotted vertical bars mark model alerts (attack, internal_fault, unexplained, combination) during replay."
+    },
+    {
+      "id": 10,
+      "title": "Telemetry Entries Exported",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 35 },
+      "targets": [
+        { "expr": "observability_telemetry_entries_total", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 11,
+      "title": "Replay Minute Index",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 35 },
+      "targets": [
+        { "expr": "observability_replay_minute_index", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "max": 240 } }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["observability", "cpu", "domains", "telemetry"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Domain CPU & Telemetry Utilization",
+  "uid": "domain-cpu-telemetry",
+  "version": 2
+}

@@ -1,0 +1,319 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Model Prediction Alerts
+    folder: Observability
+    interval: 10s
+    rules:
+      - uid: obs-model-attack
+        title: Model — Security Attack Detected
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: sum(observability_domain_alert_active{verdict="attack"})
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0, 0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        dashboardUid: domain-cpu-telemetry
+        panelId: 9
+        annotations:
+          summary: "Model predicted attack verdict on one or more domains"
+          description: "CIS + ML fusion flagged security attack. Check Live Monitor and Incidents tabs."
+        labels:
+          severity: critical
+          team: jakas
+          verdict: attack
+
+      - uid: obs-model-internal-fault
+        title: Model — Internal Fault Detected
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: sum(observability_domain_alert_active{verdict="internal_fault"})
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0, 0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        dashboardUid: domain-cpu-telemetry
+        panelId: 9
+        annotations:
+          summary: "Model predicted internal_fault on transaction or process domain"
+          description: "Operational/code defect pattern detected. RCA and remediation proposed in app."
+        labels:
+          severity: warning
+          team: jakas
+          verdict: internal_fault
+
+      - uid: obs-model-unexplained
+        title: Model — Unexplained Residual
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: sum(observability_domain_alert_active{verdict="unexplained"})
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0, 0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        dashboardUid: domain-cpu-telemetry
+        panelId: 9
+        annotations:
+          summary: "Model flagged unexplained residual (>3σ, no context match)"
+          description: "Isolation Forest or residual gate triggered. Investigate in Analysis tab."
+        labels:
+          severity: warning
+          team: jakas
+          verdict: unexplained
+
+      - uid: obs-fusion-combination
+        title: Model — COMBINATION Attack + Internal Fault
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: observability_fusion_combination
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0, 0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        dashboardUid: domain-cpu-telemetry
+        panelId: 9
+        annotations:
+          summary: "Simultaneous attack + internal_fault — championship COMBINATION scenario"
+          description: "Golden demo window ~20:16 UTC. Incident and graded remediation auto-proposed."
+        labels:
+          severity: critical
+          team: jakas
+          verdict: combination
+
+      - uid: obs-incident-created
+        title: Model — Incident Opened
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: sum(increase(observability_incidents_created_total[2m]))
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0, 0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        dashboardUid: domain-cpu-telemetry
+        panelId: 9
+        annotations:
+          summary: "RCA incident created from model alert"
+          description: "New incident persisted with causal graph and remediation ladder."
+        labels:
+          severity: critical
+          team: jakas
+          verdict: incident
+
+      - uid: obs-any-model-alert
+        title: Model — Any Alert Active
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              editorMode: code
+              expr: observability_fusion_alert_active
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: [0, 0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        dashboardUid: domain-cpu-telemetry
+        panelId: 9
+        annotations:
+          summary: "Fusion engine reports at least one alerting domain"
+          description: "Umbrella alert — fires whenever attack, internal_fault, or unexplained is active."
+        labels:
+          severity: info
+          team: jakas
+          verdict: any

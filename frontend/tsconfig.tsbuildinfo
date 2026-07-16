@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts"],"errors":true,"version":"5.7.3"}
+{"root":["./src/App.tsx","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/FusionPanel.tsx","./src/components/Layout.tsx","./src/components/ReplayControls.tsx","./src/hooks/useObservability.ts","./src/lib/helpers.ts","./src/pages/AnalysisPage.tsx","./src/pages/GrafanaPage.tsx","./src/pages/HomePage.tsx","./src/pages/IncidentsPage.tsx","./src/pages/MonitorPage.tsx","./src/pages/RemediationPage.tsx","./src/pages/TimelinePage.tsx"],"version":"5.7.3"}

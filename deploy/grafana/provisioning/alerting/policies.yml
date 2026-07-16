@@ -1,0 +1,9 @@
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: Team Jakas Observability
+    group_by: ["alertname", "verdict"]
+    group_wait: 10s
+    group_interval: 30s
+    repeat_interval: 4h

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import time
-import uuid
 from pathlib import Path
 
 from app.analysis.fusion import fuse_observation
@@ -48,7 +47,15 @@ class ReplayEngine:
         self._running = True
         history: list[Observation] = []
         all_actions = []
+        run_incidents = 0
         total = len(self.observations)
+
+        self.storage.reset_for_replay()
+        self._active_incident_id = None
+
+        from app.metrics.exporter import record_decomposition, record_fusion, record_live_tick, reset_replay_metrics
+
+        reset_replay_metrics()
 
         for i, obs in enumerate(self.observations):
             if not self._running:
@@ -72,6 +79,11 @@ class ReplayEngine:
             fusion = fuse_observation(obs, history)
             history.append(obs)
             detect_ms = (time.perf_counter() - t0) * 1000
+
+            from app.metrics.exporter import record_decomposition, record_fusion, record_live_tick
+
+            record_live_tick(obs, minute_index=i + 1)
+            record_decomposition(fusion.domain_verdicts)
 
             decomp = [
                 {
@@ -170,8 +182,9 @@ class ReplayEngine:
                 if fusion.combination and self._active_incident_id:
                     incident_id = self._active_incident_id
                 else:
-                    incident_id = f"inc-{uuid.uuid4().hex[:8]}"
-                    self._active_incident_id = incident_id
+                    incident_id = f"inc-{obs.source_row:04d}"
+                    if fusion.combination:
+                        self._active_incident_id = incident_id
 
                 incident = build_incident(
                     incident_id,
@@ -183,6 +196,7 @@ class ReplayEngine:
                 incident.mttr_mitigate_ms = round(detect_ms * 2.2, 2)
                 self.storage.save_incident(incident)
                 save_incident_report(incident)
+                run_incidents += 1
 
                 await self._emit(
                     ReplayEvent(
@@ -193,7 +207,18 @@ class ReplayEngine:
                     )
                 )
 
-                actions = propose_actions(incident)
+                if incident.causal_graph:
+                    await self._emit(
+                        ReplayEvent(
+                            seq=i * 10 + 55,
+                            event_type="causal_graph",
+                            timestamp=obs.timestamp,
+                            data=incident.causal_graph.model_dump(),
+                        )
+                    )
+
+                prior = self.storage.feedback_outcomes()
+                actions = propose_actions(incident, prior_outcomes=prior)
                 for action in actions:
                     self.storage.save_action(action)
                     all_actions.append(action)
@@ -205,6 +230,16 @@ class ReplayEngine:
                             data=action.model_dump(),
                         )
                     )
+
+            record_fusion(fusion, incident_created=bool(alerts))
+
+            from app.metrics.grafana_annotations import push_alert_annotations
+
+            await push_alert_annotations(
+                fusion,
+                incident_created=bool(alerts),
+                replay_minute=i + 1,
+            )
 
             pause_ms = 0
             if fusion.combination or any(v.verdict == Verdict.ATTACK for v in fusion.domain_verdicts):
@@ -224,7 +259,7 @@ class ReplayEngine:
                 seq=9999,
                 event_type="replay_complete",
                 timestamp="",
-                data={"total_rows": total, "incidents": len(self.storage.list_incidents())},
+                data={"total_rows": total, "incidents": run_incidents},
             )
         )
         self._running = False

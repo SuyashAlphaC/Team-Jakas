@@ -1,0 +1,41 @@
+# Recent deployment metadata for code/config-aware RCA
+# Correlated with incidents by service + timestamp proximity
+
+deployments:
+  identity_svc:
+    version: "2.4.1"
+    commit: "def456a"
+    deployed_at: "2026-07-16T18:30:00Z"
+    author: "platform-team"
+    message: "Increase auth heap buffer for peak events"
+    config:
+      RATE_LIMIT_PER_ASN: "999999"
+      HEAP_BUFFER_KB: "65536"
+      SESSION_TTL_SEC: "3600"
+  identity:
+    version: "2.4.1"
+    commit: "abc123f"
+    deployed_at: "2026-07-16T17:45:00Z"
+    author: "security-team"
+    message: "Relax ASN rate limits for merch drop"
+    config:
+      RATE_LIMIT_PER_ASN: "999999"
+      WAF_MODE: "monitor"
+  payment:
+    version: "1.8.3"
+    commit: "ghi789b"
+    deployed_at: "2026-07-16T16:00:00Z"
+    author: "payments-team"
+    message: "Increase retry resilience"
+    config:
+      MAX_RETRIES: "999"
+      CIRCUIT_BREAKER: "disabled"
+  checkout:
+    version: "3.1.0"
+    commit: "jkl012c"
+    deployed_at: "2026-07-16T15:00:00Z"
+    author: "commerce-team"
+    message: "Merch drop capacity prep"
+    config:
+      REPLICAS: "4"
+      RATE_LIMIT_RPS: "50000"

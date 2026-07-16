@@ -17,12 +17,14 @@ COPY fixtures ./fixtures
 COPY services ./services
 COPY data/models ./data/models
 
-RUN mkdir -p /app/data/reports && chown -R appuser:appuser /app
+RUN mkdir -p /app/data/reports /app/data/.matplotlib && chown -R appuser:appuser /app
 
 USER appuser
 
 ENV PYTHONPATH=/app
 ENV OBS_ROOT=/app
+ENV MPLCONFIGDIR=/app/data/.matplotlib
+ENV HOME=/app/data
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

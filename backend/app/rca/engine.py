@@ -1,12 +1,11 @@
-"""Root cause analysis with topology-aware symptom collapse."""
+"""Root cause analysis with causal graph reasoning and config awareness."""
 
 from __future__ import annotations
 
 from typing import Optional
 
-import yaml
-
-from app.config_paths import TOPOLOGY_PATH
+from app.causal.graph import build_causal_graph
+from app.config.awareness import deployment_context_for_incident, enrich_root_with_deployment
 from app.localization.scanner import localize_from_verdict
 from app.models import (
     CauseClass,
@@ -16,13 +15,6 @@ from app.models import (
     RootCauseCandidate,
     Verdict,
 )
-
-
-def _load_topology() -> dict:
-    if TOPOLOGY_PATH.exists():
-        with TOPOLOGY_PATH.open() as f:
-            return yaml.safe_load(f) or {}
-    return {}
 
 
 def collapse_symptoms(verdicts: list[DomainVerdict]) -> list[str]:
@@ -36,7 +28,7 @@ def collapse_symptoms(verdicts: list[DomainVerdict]) -> list[str]:
     return symptoms
 
 
-def rank_roots(verdicts: list[DomainVerdict]) -> list[RootCauseCandidate]:
+def rank_roots(verdicts: list[DomainVerdict], obs: Observation | None = None) -> list[RootCauseCandidate]:
     roots: list[RootCauseCandidate] = []
     seen: set[str] = set()
 
@@ -50,6 +42,8 @@ def rank_roots(verdicts: list[DomainVerdict]) -> list[RootCauseCandidate]:
         root = localize_from_verdict(v.domain, v.verdict, v.evidence + [v.reason])
         if root:
             root.confidence = v.confidence
+            if obs:
+                root = enrich_root_with_deployment(root, obs)
             roots.append(root)
 
     if len(roots) > 1:
@@ -73,7 +67,7 @@ def build_incident(
     fusion_summary: str = "",
     detect_ms: Optional[float] = None,
 ) -> Incident:
-    roots = rank_roots(verdicts)
+    roots = rank_roots(verdicts, obs)
     symptoms = collapse_symptoms(verdicts)
     suppressed = [v.domain for v in verdicts if v.verdict == Verdict.EXPECTED]
     alert_verdicts = [v for v in verdicts if v.verdict in (Verdict.ATTACK, Verdict.INTERNAL_FAULT)]
@@ -89,6 +83,12 @@ def build_incident(
     if fusion_summary and alert_verdicts:
         symptoms.insert(0, fusion_summary)
 
+    causal_graph = build_causal_graph(obs, verdicts, roots)
+    deployments = deployment_context_for_incident(roots, obs)
+
+    reasoning_parts = causal_graph.reasoning_chain[:3]
+    reasoning_summary = " → ".join(reasoning_parts) if reasoning_parts else fusion_summary
+
     return Incident(
         incident_id=incident_id,
         started_at=obs.timestamp,
@@ -100,4 +100,7 @@ def build_incident(
         confidence=round(conf, 2),
         mttr_detect_ms=detect_ms,
         mttr_rca_ms=round((detect_ms or 0) * 1.4, 2) if detect_ms else None,
+        causal_graph=causal_graph,
+        deployment_context=deployments,
+        reasoning_summary=reasoning_summary,
     )

@@ -4,6 +4,12 @@
 **Status:** {{ incident.status }}  
 **Confidence:** {{ incident.confidence }}
 
+{% if incident.reasoning_summary %}
+## Causal Reasoning
+
+{{ incident.reasoning_summary }}
+{% endif %}
+
 ## Symptom Storm
 
 {% for s in incident.symptoms %}
@@ -23,13 +29,54 @@ These domains were explained by scheduled events and **not** alerted:
 None
 {% endif %}
 
+{% if incident.causal_graph and incident.causal_graph.nodes %}
+## Causal Dependency Graph
+
+**Primary root:** {{ incident.causal_graph.primary_root_id or 'n/a' }}
+
+### Reasoning chain
+{% for step in incident.causal_graph.reasoning_chain %}
+- {{ step }}
+{% endfor %}
+
+### Nodes ({{ incident.causal_graph.nodes | length }})
+| Type | Label | Domain/Service | Confidence |
+|------|-------|----------------|------------|
+{% for n in incident.causal_graph.nodes %}
+| {{ n.node_type }} | {{ n.label }} | {{ n.domain or n.service or '—' }} | {{ n.confidence }} |
+{% endfor %}
+
+### Edges ({{ incident.causal_graph.edges | length }})
+{% for e in incident.causal_graph.edges %}
+- `{{ e.source }}` —{{ e.relation }}→ `{{ e.target }}` (w={{ e.weight }}) — {{ e.evidence[:80] }}
+{% endfor %}
+{% endif %}
+
+{% if incident.deployment_context %}
+## Deployment & Config Context
+
+{% for dep in incident.deployment_context %}
+### {{ dep.service }} v{{ dep.version }} (`{{ dep.commit }}`)
+
+- **Deployed:** {{ dep.deployed_at }} by {{ dep.author }}
+- **Message:** {{ dep.message }}
+{% if dep.config_snapshot %}
+- **Config snapshot:**
+{% for k, v in dep.config_snapshot.items() %}
+  - `{{ k }}` = `{{ v }}`
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
 ## Collapse to Origin
 
 {% for root in incident.roots %}
 ### {{ root.service }} — {{ root.cause_class.value }}
 
 - **Mechanism:** {{ root.mechanism }}
-- **Localization:** {{ root.file or 'n/a' }}{% if root.function %} :: `{{ root.function }}`{% endif %}
+- **Localization:** {{ root.file or 'n/a' }}{% if root.function %} :: `{{ root.function }}()`{% endif %}
 {% if root.config_key %}- **Config:** `{{ root.config_key }}`{% endif %}
 {% if root.likely_commit %}- **Likely commit:** `{{ root.likely_commit }}`{% endif %}
 - **Confidence:** {{ root.confidence }}

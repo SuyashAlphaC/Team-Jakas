@@ -1,0 +1,12 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Team Jakas Observability
+    receivers:
+      - uid: jakas-backend-webhook
+        type: webhook
+        settings:
+          url: http://backend:8000/api/alerting/webhook
+          httpMethod: POST
+        disableResolveMessage: false
