@@ -1,109 +1,177 @@
-# Architecture
+# Aperture — Architecture
 
 ## Overview
 
-The Platinum demo implements Phase 1 detection plus **Phase 2 reasoning** (causal graph, config awareness, risk planner):
+Platinum demo: **Phase 1 detection** + **Phase 2 reasoning** + **local Docker stack** + **tabbed dashboard**.
 
 ```
-CSV → CIS → Analyzers → Fusion → Causal Graph → RCA + Deploy/Config → Risk Planner → Verify → Feedback → Dashboard
+CSV + stack_traces.json
+  → Replay Engine (session reset each run)
+  → CIS Decomposition + ML overlay
+  → Tier-3 Analyzers
+  → Evidence Fusion
+  → Causal Graph
+  → Stack-trace parser → Code/config localization
+  → Risk-aware Remediation Planner
+  → Verification + Feedback loop
+  → SQLite audit + SSE
+  → React tabbed UI + optional Grafana metrics/alerts (localhost:3001)
 ```
 
-Phase 2 modules:
-
-| Module | Path | Role |
-|--------|------|------|
-| Causal graph | `backend/app/causal/graph.py` | Symptom → service → root tracing via topology |
-| Config awareness | `backend/app/config/awareness.py` | Maps roots to deploy metadata + config values |
-| Risk planner | `backend/app/remediation/risk_planner.py` | Blast-radius scored action ladder |
-| Feedback loop | `backend/app/remediation/feedback.py` | Post-action verification + outcome recording |
-
-Legacy diagram (Phase 1 core):
+## System diagram
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│  CSV Seed   │───▶│ Replay Engine│───▶│ CIS Decomposer  │
-└─────────────┘    └──────────────┘    └────────┬────────┘
-                                                 │
-                    ┌────────────────────────────┼────────────────────────────┐
-                    ▼                            ▼                            ▼
+│ CSV + Stack │───▶│ Replay Engine│───▶│ CIS + ML Layer  │
+│   Traces    │    │ (reset/run)  │    └────────┬────────┘
+└─────────────┘    └──────────────┘             │
+                    ┌───────────────────────────┼───────────────────────────┐
+                    ▼                           ▼                           ▼
              ┌─────────────┐            ┌─────────────┐              ┌─────────────┐
              │ Transaction │            │  Security   │              │   Process   │
              │  Verdict    │            │  Verdict    │              │   Verdict   │
              └──────┬──────┘            └──────┬──────┘              └──────┬──────┘
-                    └────────────────────────────┼────────────────────────────┘
-                                                 ▼
-                                        ┌─────────────────┐
-                                        │ Evidence Fusion │
-                                        └────────┬────────┘
-                                                 ▼
-                                        ┌─────────────────┐
-                                        │   RCA Engine    │
-                                        │ + Localization  │
-                                        └────────┬────────┘
-                                                 ▼
-                                        ┌─────────────────┐
-                                        │ Remediation SM  │
-                                        │ (graded actions)│
-                                        └────────┬────────┘
-                                                 ▼
-                                        ┌─────────────────┐
-                                        │ SQLite + Audit  │
-                                        │ SSE Dashboard   │
-                                        └─────────────────┘
+                    └──────────────────────────┼──────────────────────────────┘
+                                               ▼
+                                      ┌─────────────────┐
+                                      │ Evidence Fusion │
+                                      └────────┬────────┘
+                                               ▼
+                    ┌──────────────────────────┼──────────────────────────┐
+                    ▼                          ▼                          ▼
+           ┌────────────────┐        ┌─────────────────┐        ┌─────────────────┐
+           │ Causal Graph   │        │ Stack-trace     │        │ Prometheus      │
+           │ (topology)     │        │ Localization    │        │ alert metrics   │
+           └───────┬────────┘        └────────┬────────┘        └────────┬────────┘
+                   └──────────────────────────┼──────────────────────────┘
+                                              ▼
+                                     ┌─────────────────┐
+                                     │ Risk Planner +  │
+                                     │ Feedback loop   │
+                                     └────────┬────────┘
+                                              ▼
+                                     ┌─────────────────┐
+                                     │ SQLite + Audit  │
+                                     │ SSE + Dashboard │
+                                     └─────────────────┘
 ```
 
-## Components
+## Phase 2 modules
 
-### Ingestion (`backend/app/ingestion/`)
-- CSV adapter with schema sniffing
-- Context column detection (`ctx_expected_*`)
-- Label passthrough (`target_*`)
+| Module | Path | Role |
+|--------|------|------|
+| Causal graph | `backend/app/causal/graph.py` | Symptom → service → root via topology + propagation rules |
+| Config awareness | `backend/app/config/awareness.py` | Roots enriched with deploy metadata + config snapshots |
+| Stack-trace parser | `backend/app/localization/stacktrace.py` | Python / Java / Go / Node frame extraction |
+| Localization | `backend/app/localization/scanner.py` | Stack-first roots + static map fallback + diff patches |
+| Stack trace fixtures | `fixtures/stack_traces.json` | Timestamp-keyed traces for demo window |
+| Risk planner | `backend/app/remediation/risk_planner.py` | Blast-radius scored action ladder |
+| Feedback loop | `backend/app/remediation/feedback.py` | Post-action verification + outcome recording |
+| Grafana annotations | `backend/app/metrics/grafana_annotations.py` | Push vertical-line markers during replay |
+| Alert metrics | `backend/app/metrics/exporter.py` | Prometheus gauges/counters for Grafana alerting |
 
-### Analysis (`backend/app/analysis/`)
-- **decomposition.py** — CIS context multipliers: `expected = baseline + context_effect`
-- **analyzers.py** — Tier-3 parallel analyzers (Phase 1 Figure 1):
-  - `SecurityAnalyzer` — auth failure rate, no identity context, residual during surge
-  - `InternalFlowAnalyzer` — retry storm (suppressed during merch event)
-  - `ResourceHealthAnalyzer` — heap growth / PELT-like monotonic leak
-- **fusion.py** — Evidence Fusion Engine merges analyzer signals + post-calibration (event-end recovery, attack cleared)
+Config files: `config/topology.yml`, `config/deployments.yml`, `config/remediation-policies.yml`
 
-### Localization (`backend/app/localization/`)
-- Reads real source files under `services/` and emits line-numbered diff patches
-- Maps to `auth_handler.py`, `memory_leak.py`, `retry.py` with config keys and commits
+## Ingestion (`backend/app/ingestion/`)
 
-### Reports (`backend/app/reports/`)
-- Jinja2 RCA markdown per incident (Platinum deliverable #2)
-- Remediation log with graduation ladder (deliverable #3)
+- **csv_adapter.py** — schema sniffing, `ctx_expected_*` context columns, `target_*` labels, optional `stack_trace` column
+- **stack_traces.py** — merges `fixtures/stack_traces.json` into observation labels by timestamp
 
-### RCA (`backend/app/rca/`)
-- Symptom storm collapse to ranked root candidates
-- Service topology from `config/topology.yml`
-- Code localization fixtures mapping to `services/payment-svc/retry.py` and `services/identity-svc/memory_leak.py`
-- Combination root cause when attack + internal fault concurrent
+## Analysis (`backend/app/analysis/`)
 
-### Remediation (`backend/app/remediation/`)
-- Graded action ladder: observe → rate_limit → throttle → restart → isolate
-- Confidence gates: 0.72 alert, 0.78 suppress, 0.85 act, 0.90 human approval
-- Human-in-loop for high-blast-radius actions
-- Rollback commands stored per action
+- **decomposition.py** — CIS: `expected = baseline + context_effect`; 3σ gate; attack/internal fingerprints
+- **analyzers.py** — SecurityAnalyzer, InternalFlowAnalyzer, ResourceHealthAnalyzer
+- **fusion.py** — cross-domain synthesis, COMBINATION detection, warm-up suppression
 
-### Storage (`backend/app/storage/`)
-- SQLite WAL mode
-- Hash-chained audit ledger (prev_hash → entry_hash)
-- Incident and action persistence
+## ML (`backend/app/ml/`)
 
-### Frontend (`frontend/`)
-- React 19 + TypeScript + Vite
-- SSE timeline for live replay
-- Domain verdict badges, RCA panel, remediation approval UI
-- MTTR display (detect + RCA latency)
+- Prophet + CIS baselines, Isolation Forest, PELT change-points, LSTM auth autoencoder
+- Controlled by `OBS_USE_ML=true` (default in Docker)
 
-## Deployment
+## Localization flow
 
-Docker Compose with two services:
-- `backend`: FastAPI on 127.0.0.1:8000
-- `frontend`: nginx serving React build, proxying /api to backend
+1. Incident opens on `attack` or `internal_fault` verdict
+2. `rank_roots()` checks `obs.labels["stack_trace"]` and evidence for embedded traces
+3. **Parser** extracts frames under `services/` → `RootCauseCandidate` per file with `file:line`, function, diff patch
+4. **Fallback** — `LOCALIZATION_MAP` regex-scans `services/*.py` when no trace available
+5. **Deploy enrich** — `enrich_root_with_deployment()` attaches commit, config key values from `config/deployments.yml`
 
-## Deterministic Ladder
+Supported trace formats:
 
-For the 3–7 row secret seed, Prophet/LSTM are skipped in favor of deterministic robust statistics. This ensures reproducible demo behavior across machines without GPU or large training windows.
+| Language | Example frame |
+|----------|---------------|
+| Python | `File "services/payment-svc/retry.py", line 14, in process_payment` |
+| Java | `at com.foo.Bar.method(Retry.java:14)` |
+| Go | `services/identity-svc/memory_leak.go:9 +0x4a` |
+| Node | `at fn (/app/services/payment-svc/retry.js:14:11)` |
+
+## RCA (`backend/app/rca/`)
+
+- Symptom collapse, ranked roots (multi-frame from stack on COMBINATION)
+- Causal graph nodes/edges + reasoning chain
+- Combination synthetic root when attack + internal_fault concurrent
+- Deterministic incident IDs: `inc-{source_row:04d}`
+
+## Remediation (`backend/app/remediation/`)
+
+- Grades: observe → rate_limit → throttle → restart → isolate → rollback
+- Confidence gates: 0.72 alert · 0.78 suppress · 0.85 act · 0.90 human approval
+- Deterministic action IDs per incident/grade/target
+- `POST /api/actions/{id}/advance` — approve advances PROPOSED → EXECUTING → VERIFYING → SUCCEEDED
+
+## Storage (`backend/app/storage/`)
+
+- SQLite WAL, hash-chained audit ledger
+- **`reset_for_replay()`** — clears incidents, actions, feedback, replay events at each replay start (deterministic counts)
+
+## Metrics & Grafana (`deploy/grafana/`)
+
+| Component | Role |
+|-----------|------|
+| Prometheus | Scrapes `/metrics` every 5s |
+| Histograms | `observability_domain_cpu_usage_pct` — backfilled on `/api/import` |
+| Live gauges | `observability_domain_cpu_current_pct` — updated each replay minute |
+| Alert gauges | `observability_domain_alert_active{domain,verdict}` — fusion-driven |
+| Alert rules | Provisioned in `deploy/grafana/provisioning/alerting/rules.yml` |
+| Annotations | Dashboard JSON layers + backend API push for dotted vertical bars |
+
+Grafana host port **3001** (container 3000). Embedded in the **Grafana** dashboard tab via iframe.
+
+## Frontend (`frontend/src/`)
+
+Modular React 19 + TypeScript + Vite:
+
+| Module | Role |
+|--------|------|
+| `hooks/useObservability.ts` | State, SSE replay, API refresh, approve flow |
+| `components/Layout.tsx` | Header, sticky nav, footer |
+| `pages/HomePage.tsx` | Landing hero + demo script |
+| `pages/MonitorPage.tsx` | Live decomposition + verdicts |
+| `pages/AnalysisPage.tsx` | Fusion panel |
+| `pages/IncidentsPage.tsx` | RCA + causal graph + stack-parsed roots |
+| `pages/RemediationPage.tsx` | Action ladder + approve |
+| `pages/TimelinePage.tsx` | Event stream |
+| `pages/GrafanaPage.tsx` | Embedded Grafana kiosk iframe |
+
+## Deployment topology
+
+**Docker Compose** (local full stack — the only supported deployment):
+
+| Service | Port | Notes |
+|---------|------|-------|
+| backend | 8000 | FastAPI + metrics |
+| frontend | 5173 | nginx → API proxy |
+| prometheus | 9090 | Metrics scrape |
+| grafana | 3001 | Dashboards + alerting |
+
+Run: `docker compose up --build` — see [deploy/DEPLOY.md](../deploy/DEPLOY.md).
+
+## Determinism
+
+- Each replay calls `storage.reset_for_replay()` — no cross-run incident accumulation
+- Replay uses `record_live_tick()` for gauges (histograms not double-counted per run)
+- Canonical seed scoring via `GET /api/validation` remains independent of full 240-row noise
+
+## API summary
+
+See [README.md](../README.md#api-endpoints) for the full endpoint table including Phase 2 and alerting routes.

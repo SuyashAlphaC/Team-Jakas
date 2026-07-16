@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.causal.graph import build_causal_graph
 from app.config.awareness import deployment_context_for_incident, enrich_root_with_deployment
-from app.localization.scanner import localize_from_verdict
+from app.localization.scanner import localize_all_from_verdict
 from app.models import (
     CauseClass,
     DomainVerdict,
@@ -31,6 +31,7 @@ def collapse_symptoms(verdicts: list[DomainVerdict]) -> list[str]:
 def rank_roots(verdicts: list[DomainVerdict], obs: Observation | None = None) -> list[RootCauseCandidate]:
     roots: list[RootCauseCandidate] = []
     seen: set[str] = set()
+    stack_text = obs.labels.get("stack_trace") if obs else None
 
     for v in verdicts:
         if v.verdict not in (Verdict.ATTACK, Verdict.INTERNAL_FAULT):
@@ -39,9 +40,19 @@ def rank_roots(verdicts: list[DomainVerdict], obs: Observation | None = None) ->
         if key in seen:
             continue
         seen.add(key)
-        root = localize_from_verdict(v.domain, v.verdict, v.evidence + [v.reason])
-        if root:
-            root.confidence = v.confidence
+
+        candidates = localize_all_from_verdict(
+            v.domain,
+            v.verdict,
+            v.evidence + [v.reason],
+            stack_text=stack_text,
+            confidence=v.confidence,
+        )
+        for root in candidates:
+            file_key = root.file or root.service
+            dedupe = f"{root.service}:{file_key}"
+            if dedupe in {f"{r.service}:{r.file or r.service}" for r in roots}:
+                continue
             if obs:
                 root = enrich_root_with_deployment(root, obs)
             roots.append(root)

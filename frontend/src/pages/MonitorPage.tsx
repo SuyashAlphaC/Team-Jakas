@@ -1,4 +1,5 @@
 import { AlertBanner, ReplayControls, StatsRow } from "../components/ReplayControls";
+import { PageHeader } from "../components/PageHeader";
 import type { ObservabilityState } from "../types";
 
 export function MonitorPage({ obs }: { obs: ObservabilityState }) {
@@ -6,10 +7,10 @@ export function MonitorPage({ obs }: { obs: ObservabilityState }) {
 
   return (
     <div className="page monitor-page">
-      <div className="page-header anim-fade-in">
-        <h2>Live Monitor</h2>
-        <p className="muted">Real-time alerts, residuals, and domain verdicts during replay</p>
-      </div>
+      <PageHeader
+        title="Live Monitor"
+        subtitle="Real-time alerts, residuals, and domain verdicts during replay"
+      />
 
       <ReplayControls obs={obs} />
       <AlertBanner obs={obs} />

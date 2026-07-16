@@ -8,6 +8,7 @@ from pathlib import Path
 
 from app.analysis.fusion import fuse_observation
 from app.ingestion.csv_adapter import inspect_csv, load_observations
+from app.ingestion.stack_traces import attach_stack_traces
 from app.models import Observation, ReplayEvent, Verdict
 from app.rca.engine import build_incident
 from app.remediation.state_machine import propose_actions
@@ -38,6 +39,7 @@ class ReplayEngine:
         path = self.fixtures_dir / filename
         info = inspect_csv(path)
         self.observations = load_observations(path)
+        attach_stack_traces(self.observations, self.fixtures_dir)
         dataset_id = self.storage.import_dataset(info["path"], info["hash"], info["row_count"])
         return {**info, "dataset_id": dataset_id}
 

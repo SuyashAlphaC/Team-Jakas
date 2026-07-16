@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Context-Aware Observability", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Aperture", version="0.4.0", lifespan=lifespan)
 
 _cors_origins = os.environ.get("ALLOWED_ORIGINS", "*")
 _allow_origins = ["*"] if _cors_origins.strip() == "*" else [o.strip() for o in _cors_origins.split(",") if o.strip()]
@@ -60,7 +60,7 @@ class ApproveRequest(BaseModel):
 def health():
     return {
         "status": "ok",
-        "service": "context-aware-observability",
+        "service": "aperture",
         "version": "0.4.0",
         "ml_ready": registry.ready,
         "secret_seed_accuracy": registry._manifest.get("secret_seed_accuracy"),
@@ -195,6 +195,9 @@ def validate_against_labels(use_seed: bool = True):
     if not path.exists() and use_seed:
         path = FIXTURES_DIR / "dataset.csv"
     obs_list = load_observations(path)
+    from app.ingestion.stack_traces import attach_stack_traces
+
+    attach_stack_traces(obs_list, path.parent)
     history: list = []
     results = []
     for obs in obs_list:

@@ -70,6 +70,8 @@ def load_observations(path: Path) -> list[Observation]:
                         labels[key] = str(val)
                 elif nk.startswith("target_"):
                     labels[nk] = str(val)
+                elif nk in ("stack_trace", "error_stack", "exception_stack", "stacktrace"):
+                    labels["stack_trace"] = str(val).replace("|", "\n")
                 else:
                     try:
                         metrics[nk] = float(val)

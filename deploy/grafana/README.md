@@ -42,7 +42,7 @@ When the fusion engine predicts **attack**, **internal_fault**, **unexplained**,
 | Model — Incident Opened | `increase(observability_incidents_created_total[2m]) > 0` |
 | Model — Any Alert Active | `observability_fusion_alert_active == 1` |
 
-**View firing alerts:** Grafana → **Alerting** → **Alert rules** (folder: Observability)
+**View firing alerts:** Grafana → **Alerting** → **Alert rules** (folder: Aperture)
 
 **Webhook:** Alerts also POST to `POST /api/alerting/webhook` on the backend (logged in container stdout).
 
@@ -50,7 +50,7 @@ Rules provision from `deploy/grafana/provisioning/alerting/rules.yml` on `docker
 
 ## Dashboard: Domain CPU & Telemetry Utilization
 
-**Path:** Observability folder → `Domain CPU & Telemetry Utilization`
+**Path:** Aperture folder → `Domain CPU & Telemetry Utilization`
 
 | Panel | Type | What it shows |
 |-------|------|---------------|
@@ -90,6 +90,7 @@ Rules provision from `deploy/grafana/provisioning/alerting/rules.yml` on `docker
 ## Demo flow
 
 1. `POST /api/import` — fills histograms from 240-min dataset
-2. Open Grafana → pie charts show domain share; histograms show CPU/util distribution
-3. Start replay on main dashboard — live time series + compute pie update each minute
-4. Jump to 20:16 — compute histogram shifts right; security/process pies grow
+2. Open the **Grafana** tab at **http://127.0.0.1:5173** or Grafana directly at **http://localhost:3001**
+3. Start replay on **Live Monitor** — live time series + compute pie update each minute
+4. At **20:16 UTC** — dotted alert vertical bars + firing rules under **Alerting → Alert rules**
+5. Jump to **Incidents & RCA** tab for stack-parsed `file:line` roots from the same alert window

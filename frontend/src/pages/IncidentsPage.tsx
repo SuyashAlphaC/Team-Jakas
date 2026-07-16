@@ -1,4 +1,5 @@
 import { API } from "../lib/helpers";
+import { PageHeader } from "../components/PageHeader";
 import type { ObservabilityState } from "../types";
 
 export function IncidentsPage({ obs }: { obs: ObservabilityState }) {
@@ -7,10 +8,10 @@ export function IncidentsPage({ obs }: { obs: ObservabilityState }) {
   if (incidents.length === 0) {
     return (
       <div className="page incidents-page">
-        <div className="page-header anim-fade-in">
-          <h2>Incidents & RCA</h2>
-          <p className="muted">Causal root-cause analysis with code localization</p>
-        </div>
+        <PageHeader
+          title="Incidents & RCA"
+          subtitle="Causal root-cause analysis with code localization"
+        />
         <div className="empty-state anim-fade-in">
           <span className="empty-icon">⚡</span>
           <p>No incidents yet — start replay and jump to <strong>20:16 ★</strong></p>
@@ -21,10 +22,10 @@ export function IncidentsPage({ obs }: { obs: ObservabilityState }) {
 
   return (
     <div className="page incidents-page">
-      <div className="page-header anim-fade-in">
-        <h2>Incidents & RCA</h2>
-        <p className="muted">{incidents.length} incidents · click to inspect · export Markdown RCA</p>
-      </div>
+      <PageHeader
+        title="Incidents & RCA"
+        subtitle={`${incidents.length} incidents · click to inspect · export Markdown RCA`}
+      />
 
       <div className="incident-tabs">
         {incidents.map((inc, i) => {
@@ -91,6 +92,9 @@ export function IncidentsPage({ obs }: { obs: ObservabilityState }) {
                 <span className="muted">{(r.confidence * 100).toFixed(0)}%</span>
               </div>
               {r.file && <div className="mono text-sm">📁 {r.file}{r.function ? ` :: ${r.function}()` : ""}</div>}
+              {r.file && r.function && (
+                <span className="chip chip-purple text-sm">Parsed from stack trace</span>
+              )}
               {r.config_key && <div className="config-tag">⚙ {r.config_key}{r.likely_commit ? ` · ${r.likely_commit.slice(0, 7)}` : ""}</div>}
               <p className="muted text-sm">{r.mechanism}</p>
             </div>

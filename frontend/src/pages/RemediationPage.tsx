@@ -1,3 +1,4 @@
+import { PageHeader } from "../components/PageHeader";
 import type { ObservabilityState } from "../types";
 
 export function RemediationPage({ obs }: { obs: ObservabilityState }) {
@@ -5,10 +6,10 @@ export function RemediationPage({ obs }: { obs: ObservabilityState }) {
 
   return (
     <div className="page remediation-page">
-      <div className="page-header anim-fade-in">
-        <h2>Remediation Ladder</h2>
-        <p className="muted">Risk-ranked actions · observe → rate-limit → throttle → restart → rollback</p>
-      </div>
+      <PageHeader
+        title="Remediation Ladder"
+        subtitle="Risk-ranked actions · observe → rate-limit → throttle → restart → rollback"
+      />
 
       {approveError && (
         <div className="alert-banner alert-active anim-fade-in" role="alert">

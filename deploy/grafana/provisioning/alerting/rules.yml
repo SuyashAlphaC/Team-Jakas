@@ -3,7 +3,7 @@ apiVersion: 1
 groups:
   - orgId: 1
     name: Model Prediction Alerts
-    folder: Observability
+    folder: Aperture
     interval: 10s
     rules:
       - uid: obs-model-attack

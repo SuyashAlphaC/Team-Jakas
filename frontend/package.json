@@ -1,5 +1,6 @@
 {
-  "name": "context-aware-observability-ui",
+  "name": "aperture-ui",
+  "description": "Aperture — context-aware observability dashboard",
   "private": true,
   "version": "0.1.0",
   "type": "module",

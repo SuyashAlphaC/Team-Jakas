@@ -1,0 +1,6 @@
+{
+  "2026-07-16T20:16:00Z": "Traceback (most recent call last):\n  File \"services/identity-svc/auth_handler.py\", line 11, in validate_credentials\n    return False\n  File \"services/identity-svc/memory_leak.py\", line 9, in authenticate\n    _heap.append(b\"x\" * 65536)\n  File \"services/payment-svc/retry.py\", line 14, in process_payment\n    raise TimeoutError(f\"payment timeout after {TIMEOUT_MS}ms\")\nTimeoutError: payment timeout after 800ms",
+  "2026-07-16T20:17:00Z": "Traceback (most recent call last):\n  File \"services/payment-svc/retry.py\", line 14, in process_payment\n    raise TimeoutError(f\"payment timeout after {TIMEOUT_MS}ms\")\nTimeoutError: payment timeout after 800ms",
+  "2026-07-16T20:18:00Z": "Traceback (most recent call last):\n  File \"services/identity-svc/memory_leak.py\", line 9, in authenticate\n    _heap.append(b\"x\" * 65536)\nMemoryError: unable to allocate heap segment",
+  "2026-07-16T20:19:00Z": "Traceback (most recent call last):\n  File \"services/identity-svc/memory_leak.py\", line 9, in authenticate\n    _heap.append(b\"x\" * 65536)\nMemoryError: heap pressure during recovery"
+}

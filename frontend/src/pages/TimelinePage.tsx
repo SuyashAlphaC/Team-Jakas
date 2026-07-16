@@ -1,3 +1,4 @@
+import { PageHeader } from "../components/PageHeader";
 import type { ObservabilityState } from "../types";
 
 export function TimelinePage({ obs }: { obs: ObservabilityState }) {
@@ -5,10 +6,10 @@ export function TimelinePage({ obs }: { obs: ObservabilityState }) {
 
   return (
     <div className="page timeline-page">
-      <div className="page-header anim-fade-in">
-        <h2>Live Timeline</h2>
-        <p className="muted">SSE event stream — fusion, incidents, actions, suppressions</p>
-      </div>
+      <PageHeader
+        title="Live Timeline"
+        subtitle="SSE event stream — fusion, incidents, actions, suppressions"
+      />
 
       <div className="card timeline-card anim-slide-up">
         {timeline.length === 0 ? (

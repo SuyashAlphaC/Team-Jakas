@@ -7,7 +7,6 @@ export const GRAFANA_DASHBOARD_UID = "domain-cpu-telemetry";
 
 export const GRAFANA_URL = `${GRAFANA_BASE}/d/${GRAFANA_DASHBOARD_UID}`;
 
-/** Kiosk mode — histograms, pie charts, live gauges */
 export const GRAFANA_EMBED_URL =
   `${GRAFANA_URL}?orgId=1&kiosk=tv&theme=dark&refresh=5s`;
 

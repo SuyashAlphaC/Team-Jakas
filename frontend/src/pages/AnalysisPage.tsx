@@ -1,4 +1,5 @@
 import { FusionPanel } from "../components/FusionPanel";
+import { PageHeader } from "../components/PageHeader";
 import type { ObservabilityState } from "../types";
 
 export function AnalysisPage({ obs }: { obs: ObservabilityState }) {
@@ -6,10 +7,10 @@ export function AnalysisPage({ obs }: { obs: ObservabilityState }) {
 
   return (
     <div className="page analysis-page">
-      <div className="page-header anim-fade-in">
-        <h2>Evidence Fusion & Analysis</h2>
-        <p className="muted">Tier-3 analyzers, ML corroboration, and cross-domain synthesis</p>
-      </div>
+      <PageHeader
+        title="Evidence Fusion & Analysis"
+        subtitle="Tier-3 analyzers, ML corroboration, and cross-domain synthesis"
+      />
 
       <div className="card card-highlight anim-slide-up">
         <h3>Evidence Fusion Engine</h3>

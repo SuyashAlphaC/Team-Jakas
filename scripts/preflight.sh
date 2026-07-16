@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-echo "==> Preflight: Context-Aware Observability"
+echo "==> Preflight: Aperture"
 
 command -v docker >/dev/null || { echo "docker required"; exit 1; }
 command -v python3 >/dev/null || { echo "python3 required"; exit 1; }

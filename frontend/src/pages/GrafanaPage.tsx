@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { APP_NAME } from "../lib/brand";
 import { GRAFANA_AVAILABLE, GRAFANA_BASE, GRAFANA_EMBED_URL, GRAFANA_URL } from "../lib/helpers";
 
 export function GrafanaPage() {
@@ -18,7 +19,6 @@ export function GrafanaPage() {
       .catch(() => {
         if (!cancelled) setReachable(false);
       });
-    // no-cors opaque response still means server responded; assume ok on localhost
     const t = window.setTimeout(() => {
       if (!cancelled) setReachable((r) => (r === null ? true : r));
     }, 800);
@@ -34,6 +34,7 @@ export function GrafanaPage() {
     <div className="page grafana-page anim-fade-in">
       <div className="page-header grafana-header">
         <div>
+          <span className="page-eyebrow">{APP_NAME}</span>
           <h2>Grafana Metrics</h2>
           <p className="muted">
             Domain CPU histograms, utilization pie charts, and live gauges from Prometheus
@@ -49,10 +50,10 @@ export function GrafanaPage() {
       {!showEmbed && (
         <div className="card grafana-unavailable anim-slide-up">
           <span className="empty-icon">📊</span>
-          <h3>Grafana runs locally with Docker</h3>
+          <h3>Start {APP_NAME} with Docker</h3>
           <p className="muted">
-            Histograms and pie charts are served by the local Grafana stack (container port 3000 →{" "}
-            <strong>http://localhost:3001</strong>). They are not available on the Vercel-hosted frontend.
+            Grafana runs alongside {APP_NAME} via Docker Compose at{" "}
+            <strong>http://localhost:3001</strong>.
           </p>
           <ol className="demo-steps">
             <li>
@@ -61,7 +62,7 @@ export function GrafanaPage() {
             <li>
               <code>curl -X POST http://localhost:8000/api/import</code> — backfill histogram metrics
             </li>
-            <li>Open this app at <strong>http://localhost:5173</strong> and return to the Grafana tab</li>
+            <li>Open {APP_NAME} at <strong>http://127.0.0.1:5173</strong> and return to the Grafana tab</li>
           </ol>
           <a className="btn btn-primary" href={GRAFANA_URL} target="_blank" rel="noreferrer">
             Open Grafana at localhost:3001 ↗
@@ -78,7 +79,7 @@ export function GrafanaPage() {
             </div>
           )}
           <iframe
-            title="Grafana — Domain CPU & Telemetry Utilization"
+            title={`${APP_NAME} · Domain CPU & Telemetry Utilization`}
             src={GRAFANA_EMBED_URL}
             className={`grafana-frame ${loaded ? "loaded" : ""}`}
             onLoad={() => setLoaded(true)}
@@ -89,7 +90,9 @@ export function GrafanaPage() {
 
       {showEmbed && (
         <p className="grafana-hint muted text-sm">
-          Tip: run replay on Live Monitor — the live time-series panel shows <strong>dotted vertical bars</strong> for each model alert (attack, internal fault, unexplained, combination). Check <strong>Alerting → Alert rules</strong> for firing state.
+          Tip: run replay on Live Monitor — the live time-series panel shows{" "}
+          <strong>dotted vertical bars</strong> for each model alert (attack, internal fault, unexplained,
+          combination). Check <strong>Alerting → Alert rules</strong> for firing state.
         </p>
       )}
     </div>
