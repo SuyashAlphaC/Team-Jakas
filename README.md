@@ -88,6 +88,125 @@ CSV Seed → Replay Engine → CIS Decomposition → Domain Verdicts
 4. **Process alert** — memory leak in identity-svc; code localization to `memory_leak.py`
 5. **Recovery (20:19)** — security clears; process still degraded → restart proposed
 
+## Dashboard Guide
+
+Open **http://127.0.0.1:5173**, click **Replay Championship Night**, and use speed **6×** for a walkthrough-friendly pace. Each CSV row is **one minute** of telemetry; all panels update together for the **current replay minute** (the last row processed).
+
+### Per-minute pipeline
+
+```
+Telemetry → Residual decomposition → Domain verdicts → Evidence fusion → Incidents → Remediation actions
+```
+
+### Header and controls
+
+| Element | What it shows |
+|---------|----------------|
+| **Label accuracy** | Score against the canonical 6-row seed (`dataset_seed.csv`), not the full 240-row timeline |
+| **Dataset line** | Row count, UTC time range, current replay timestamp, and progress (`142/240`) |
+| **Replay button** | Runs the full championship-night CSV through the pipeline |
+| **Speed slider** | Replay rate (default 6×); attack/combination minutes pause longer for RCA export |
+| **Export RCA (selected)** | Markdown root-cause report for the incident tab you have selected |
+| **Export Remediation Log** | Full audit trail of all proposed actions across the replay |
+
+### Alert banner (top strip)
+
+A one-glance view of **non-normal domains on the current minute**.
+
+| Badge | Meaning |
+|-------|---------|
+| `attack` | Security anomaly — credential stuffing or hostile traffic |
+| `internal fault` | Internal degradation — memory leak, retry storm, etc. |
+| `unexplained` | Residual spike that scheduled context and rules cannot explain |
+
+Each chip shows the **domain**, **σ (sigma)**, and **confidence %**.
+
+### Stats row
+
+| Stat | Meaning |
+|------|---------|
+| **Incidents** | Times the system opened an RCA incident (attack, internal fault, or both) |
+| **Remediation actions** | Total proposed fixes across all incidents |
+| **Key (attack/combination)** | High-value incidents — real attack or attack + internal fault together (look for **★** at **20:16**) |
+
+### Explained + Unexplained Residual
+
+Per-domain **math view**: did observed telemetry fit the forecast?
+
+| Domain | Monitors |
+|--------|----------|
+| **transaction** | Request rate, 5xx errors |
+| **security** | Auth failure rate |
+| **process** | Memory growth, heap, swap |
+| **network** | Packet drops, routing churn |
+| **compute** | CPU, throttling |
+| **streaming** | CDN RPS, stall rate, segment latency |
+| **control_plane** | BGP flaps, CoPP drops, HSRP transitions |
+
+Each row shows **residual** (observed minus baseline and context effect) and **σ**. Green **expected** means the surge is explained; purple **unexplained** or orange **internal fault** means something still does not fit.
+
+### Evidence Fusion Engine
+
+The **decision layer** — how ML and rule analyzers combine into one story for this minute.
+
+| Part | Meaning |
+|------|---------|
+| **Headline** | Overall outcome — e.g. SUPPRESS, Internal Fault, COMBINATION |
+| **COMBINATION badge** | Attack and internal fault during the same legitimate event (canonical win scenario) |
+| **alert / unexplained chips** | Domains currently flagged |
+| **ML evidence chips** | Models that contributed — Prophet, Isolation Forest, PELT, LSTM |
+| **Analyzer blocks** | Tier-3 rule corroboration (SecurityAnalyzer, InternalFlowAnalyzer, ResourceHealthAnalyzer) with bullet evidence |
+
+**0 analyzer corroborations** means detection came from the ML/residual pipeline before stricter rule thresholds fired on that minute.
+
+### Domain Verdicts
+
+Same domains as the residual panel, with a **plain-English reason** per domain. Alerts sort to the top. Use this panel to read **why** each domain got its verdict (e.g. “attack cleared — auth failure rate back to baseline”).
+
+### Live Timeline
+
+Chronological **event log** during replay (newest at top).
+
+| Event type | Meaning |
+|------------|---------|
+| **tick** | Advanced to the next CSV row |
+| **fusion** | Fusion engine summary for that minute |
+| **unexplained** | Unexplained residual on one or more domains |
+| **suppress** | Surge fully explained by context — no incident |
+| **incident** | RCA incident opened (exportable) |
+| **action** | Remediation action proposed |
+
+### Incidents
+
+Every **RCA package** opened when the pipeline finds attack or internal fault. Each tab is one incident at a timestamp.
+
+- **★** marks key incidents (attack or combination) — focus on **20:16** for the judge demo
+- **Export this RCA** — per-incident Markdown report: symptoms, root cause, code file/line, MTTR
+
+On the 240-row replay you will see many incidents from ML noise in early minutes; the **★** tabs are the narrative that matters.
+
+### Remediation Ladder
+
+**Graded response plan** — what the system would do, least invasive first.
+
+| Grade | Typical use |
+|-------|-------------|
+| **observe** | Correlate before acting (especially on combination incidents) |
+| **rate_limit** | WAF/throttle hostile auth traffic |
+| **throttle** | Circuit breaker on retry storms (payment-svc) |
+| **restart** | Rolling restart for memory leak (identity-svc) |
+| **scale fans** | Scale checkout during legitimate merch surge |
+
+Each card shows **target**, **reason**, example **command**, and **Approve** for human-in-the-loop actions. The panel deduplicates similar actions; use **Export Remediation Log** for the full audit trail.
+
+### Recommended demo path (5 minutes)
+
+1. Replay at **6×** — watch the alert banner and fusion panel during **20:14–20:19**
+2. Click the **20:16 ★** incident tab
+3. **Export this RCA** — show code localization and MTTR
+4. Point to **Remediation Ladder** — rate-limit attack + restart leak
+5. Mention **100% label accuracy** on the canonical seed in the header
+
 ## Deliverables (Platinum checklist)
 
 - [x] **Working demo + dashboard** — live replay with decisions visible step-by-step
@@ -121,4 +240,4 @@ CSV → CIS Decomposition → 3 Analyzers → Evidence Fusion → RCA + Localiza
 
 ## Team
 
-Jakas — Track 2 Phase 1 Gold → Phase 2 Platinum
+Jakas
