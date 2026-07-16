@@ -15,8 +15,9 @@ COPY backend/app ./app
 COPY config ./config
 COPY fixtures ./fixtures
 COPY services ./services
+COPY data/models ./data/models
 
-RUN mkdir -p /app/data && chown -R appuser:appuser /app
+RUN mkdir -p /app/data/reports && chown -R appuser:appuser /app
 
 USER appuser
 

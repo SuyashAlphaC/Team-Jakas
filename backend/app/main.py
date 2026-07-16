@@ -38,9 +38,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Context-Aware Observability", version="0.3.0", lifespan=lifespan)
+
+_cors_origins = os.environ.get("ALLOWED_ORIGINS", "*")
+_allow_origins = ["*"] if _cors_origins.strip() == "*" else [o.strip() for o in _cors_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

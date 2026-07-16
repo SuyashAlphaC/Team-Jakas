@@ -34,6 +34,20 @@ chmod +x scripts/preflight.sh
 ./scripts/preflight.sh
 ```
 
+## Production deployment
+
+| Service | URL |
+|---------|-----|
+| **Dashboard (Vercel)** | https://context-aware-observability.vercel.app |
+| **API (AWS App Runner)** | https://dz8y3uynzx.us-east-1.awsapprunner.com |
+
+Redeploy instructions: [`deploy/DEPLOY.md`](deploy/DEPLOY.md)
+
+```bash
+./deploy/aws/deploy.sh      # backend → ECR + App Runner
+./deploy/vercel/deploy.sh   # frontend → Vercel (sets VITE_API_URL)
+```
+
 ## Architecture
 
 ```
