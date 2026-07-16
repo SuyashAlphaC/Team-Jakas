@@ -1,0 +1,24 @@
+# Remediation Action Log
+
+Graduated, safe actions with human-in-loop gates and rollback commands.
+
+{% for a in actions %}
+## {{ a.action_id }} — {{ a.grade.value }}
+
+- **Timestamp:** {{ a.timestamp }}
+- **Target:** {{ a.target }}
+- **State:** {{ a.state.value }}
+- **Confidence:** {{ a.confidence }}
+- **Blast radius:** {{ a.blast_radius }}
+- **Human approval required:** {{ a.requires_approval }}
+
+**Reason:** {{ a.reason }}
+
+**Command:** `{{ a.proposed_command }}`
+
+{% if a.rollback_command %}**Rollback:** `{{ a.rollback_command }}`{% endif %}
+
+---
+{% else %}
+No actions recorded.
+{% endfor %}

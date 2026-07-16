@@ -1,0 +1,7 @@
+timestamp,ctx_expected_ingress_multiplier,ctx_expected_transaction_multiplier,ctx_expected_identity_multiplier,compute_cpu_utilization_pct,compute_throttling_duration_ms,compute_context_switches_per_sec,memory_utilization_pct,memory_growth_slope,memory_swap_rate_kb_per_sec,network_ingress_throughput_bps,network_egress_throughput_bps,network_packet_drop_rate_pct,network_routing_churn_events,app_request_rate_per_min,app_error_rate_5xx_pct,app_latency_p99_ms,app_auth_failure_rate_pct,target_transaction_verdict,target_security_verdict,target_process_verdict
+2026-07-16T20:14:00Z,3.5,1.0,1.0,62.4,0.0,4200.0,55.2,0.002,0.0,32000000000,45000000000,0.01,0,1200000.0,0.02,120.0,0.02,0,0,0
+2026-07-16T20:15:00Z,3.5,5.0,1.0,78.3,12.5,8900.0,58.1,0.015,0.0,85000000000,92000000000,0.05,0,4800000.0,0.15,185.0,0.03,0,0,0
+2026-07-16T20:16:00Z,3.5,5.0,1.0,89.1,45.2,14200.0,64.3,0.890,0.0,92000000000,98000000000,1.20,0,5200000.0,0.85,290.0,0.54,0,1,1
+2026-07-16T20:17:00Z,3.5,5.0,1.0,94.6,110.8,18500.0,72.5,0.910,12.4,98000000000,99000000000,4.80,1,5500000.0,2.40,420.0,0.58,0,1,1
+2026-07-16T20:18:00Z,3.5,5.0,1.0,98.2,240.1,22100.0,81.4,0.925,88.2,99000000000,99000000000,8.15,3,5600000.0,5.10,580.0,0.61,0,1,1
+2026-07-16T20:19:00Z,3.5,1.0,1.0,74.1,35.0,9800.0,89.5,0.880,140.5,41000000000,52000000000,1.50,0,1800000.0,3.20,310.0,0.04,0,0,1

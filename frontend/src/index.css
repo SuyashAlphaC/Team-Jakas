@@ -1,0 +1,185 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #0f1419;
+  color: #e7ecf3;
+  line-height: 1.45;
+}
+button {
+  cursor: pointer;
+  background: #1d9bf0;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+button.secondary { background: #38444d; }
+button.danger { background: #f4212e; }
+button.small { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.card {
+  background: #192734;
+  border: 1px solid #38444d;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.card h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+.badge.expected { background: #00ba7c33; color: #00ba7c; }
+.badge.attack { background: #f4212e33; color: #f4212e; }
+.badge.internal_fault { background: #ffad1f33; color: #ffad1f; }
+.badge.unexplained { background: #7856ff33; color: #7856ff; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.alert-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #2a1a1a;
+  border: 1px solid #f4212e55;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+.alert-banner.calm {
+  background: #15202b;
+  border-color: #38444d;
+}
+.alert-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  background: #0f1419;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.fusion-headline {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+.fusion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.chip {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: #0f1419;
+  color: #8899a6;
+  border: 1px solid #38444d;
+}
+.chip.ml { color: #1d9bf0; border-color: #1d9bf055; }
+.chip.alert { color: #ffad1f; border-color: #ffad1f55; }
+.analyzer-block {
+  margin-top: 0.65rem;
+  padding: 0.65rem;
+  background: #0f1419;
+  border-radius: 6px;
+  border-left: 3px solid #1d9bf0;
+  font-size: 0.85rem;
+}
+.analyzer-block ul { margin: 0.35rem 0 0; padding-left: 1.1rem; color: #8899a6; }
+
+.verdict-row {
+  padding: 0.65rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  background: #0f1419;
+  border: 1px solid transparent;
+}
+.verdict-row.alerting {
+  border-color: #38444d;
+  background: #141c24;
+}
+.verdict-row .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.verdict-row .reason {
+  font-size: 0.82rem;
+  color: #8899a6;
+  word-break: break-word;
+}
+
+.timeline {
+  max-height: 360px;
+  overflow-y: auto;
+  font-size: 0.82rem;
+}
+.tl-entry {
+  display: grid;
+  grid-template-columns: 4.5rem 5.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #38444d33;
+  align-items: start;
+}
+.tl-time { color: #8899a6; font-family: ui-monospace, monospace; }
+.tl-type {
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.tl-type.fusion { color: #1d9bf0; }
+.tl-type.incident { color: #f4212e; }
+.tl-type.action { color: #00ba7c; }
+.tl-type.unexplained { color: #7856ff; }
+.tl-type.suppress { color: #8899a6; }
+.tl-body { color: #cfd9e3; word-break: break-word; }
+
+.incident-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.incident-tabs button { font-size: 0.78rem; }
+.incident-tabs button.key { border: 1px solid #f4212e55; }
+
+.action-card {
+  margin-bottom: 0.65rem;
+  padding: 0.65rem;
+  border-left: 3px solid #1d9bf0;
+  background: #0f1419;
+  border-radius: 0 6px 6px 0;
+}
+.action-card .grade { color: #1d9bf0; font-weight: 700; }
+.action-card code {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #8899a6;
+  word-break: break-all;
+}
+
+.stats-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #8899a6;
+  margin-bottom: 0.75rem;
+}
+.stats-row strong { color: #e7ecf3; }

@@ -1,0 +1,10 @@
+# Example event calendar for CIS (optional — secret seed uses CSV ctx columns)
+events:
+  - id: championship_kickoff
+    type: ingress
+    ingress_multiplier: 3.5
+    services: [edge, api_gateway]
+  - id: minute_75_merch_drop
+    type: transaction
+    transaction_multiplier: 5.0
+    services: [checkout, payment]

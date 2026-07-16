@@ -1,0 +1,55 @@
+# Root Cause Analysis — {{ incident.incident_id }}
+
+**Started:** {{ incident.started_at }}  
+**Status:** {{ incident.status }}  
+**Confidence:** {{ incident.confidence }}
+
+## Symptom Storm
+
+{% for s in incident.symptoms %}
+- {{ s }}
+{% else %}
+- No active symptoms (context-explained surge)
+{% endfor %}
+
+## Context-Suppressed Domains
+
+{% if incident.suppressed_domains %}
+These domains were explained by scheduled events and **not** alerted:
+{% for d in incident.suppressed_domains %}
+- {{ d }}
+{% endfor %}
+{% else %}
+None
+{% endif %}
+
+## Collapse to Origin
+
+{% for root in incident.roots %}
+### {{ root.service }} — {{ root.cause_class.value }}
+
+- **Mechanism:** {{ root.mechanism }}
+- **Localization:** {{ root.file or 'n/a' }}{% if root.function %} :: `{{ root.function }}`{% endif %}
+{% if root.config_key %}- **Config:** `{{ root.config_key }}`{% endif %}
+{% if root.likely_commit %}- **Likely commit:** `{{ root.likely_commit }}`{% endif %}
+- **Confidence:** {{ root.confidence }}
+
+**Evidence chain:**
+{% for e in root.evidence %}
+- {{ e }}
+{% endfor %}
+
+**Proposed fix:** {{ root.proposed_fix }}
+
+---
+{% endfor %}
+
+## MTTR Evidence
+
+| Phase | Latency |
+|-------|---------|
+| Detect | {{ incident.mttr_detect_ms | default('n/a') }} ms |
+| RCA | {{ incident.mttr_rca_ms | default('n/a') }} ms |
+| Mitigate | {{ incident.mttr_mitigate_ms | default('n/a') }} ms |
+
+*Traditional manual triage: ~2–4 hours. Autonomous pipeline: sub-second.*

@@ -1,0 +1,35 @@
+services:
+  edge:
+    upstream: []
+    downstream: [api_gateway]
+  api_gateway:
+    upstream: [edge]
+    downstream: [checkout, identity]
+  checkout:
+    upstream: [api_gateway]
+    downstream: [payment]
+  payment:
+    upstream: [checkout]
+    downstream: [database]
+  identity:
+    upstream: [api_gateway]
+    downstream: [identity_svc]
+  identity_svc:
+    upstream: [identity]
+    downstream: []
+  database:
+    upstream: [payment]
+    downstream: []
+
+domain_mapping:
+  network: edge
+  app: api_gateway
+  transaction: checkout
+  security: identity
+  process: identity_svc
+
+context_domains:
+  ingress: [edge, api_gateway]
+  transaction: [checkout, payment]
+  identity: [identity, identity_svc]
+  process: [identity_svc]

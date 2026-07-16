@@ -1,0 +1,18 @@
+thresholds:
+  suppress_confidence: 0.78
+  alert_confidence: 0.72
+  act_confidence: 0.85
+  human_approval_confidence: 0.90
+
+action_grades:
+  observe: 0
+  recommend: 1
+  rate_limit: 2
+  restart: 3
+  isolate: 4
+
+graduation:
+  - observe
+  - rate_limit_suspect
+  - throttle
+  - isolate
